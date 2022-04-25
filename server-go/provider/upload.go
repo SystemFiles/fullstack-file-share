@@ -7,12 +7,15 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/google/uuid"
 	"sykesdev.ca/file-server/config"
 )
 
-func UploadFile(file *multipart.FileHeader, idChan chan string, errChan chan error) {
+func UploadFile(wg *sync.WaitGroup, file *multipart.FileHeader, idChan chan string, errChan chan error) {
+	defer wg.Done()
+
 	cfg := config.Get()
 	fileId, err := uuid.NewUUID()
 	if err != nil {

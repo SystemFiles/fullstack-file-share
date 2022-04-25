@@ -3,6 +3,7 @@ package routes
 import (
 	"fmt"
 	"net/http"
+	"sync"
 
 	"github.com/labstack/echo/v4"
 	"sykesdev.ca/file-server/provider"
@@ -15,6 +16,7 @@ type FileUploadResponse struct {
 }
 
 func UploadFiles(c echo.Context) error {
+	var wg sync.WaitGroup
 	var fileIds []string
 
 	form, err := c.MultipartForm()
@@ -23,15 +25,23 @@ func UploadFiles(c echo.Context) error {
 	}
 	files := form.File["files"]
 
-	idChan, errChan := make(chan string, len(files)), make(chan error, 1)
+	wg.Add(len(files))
+	idChan, errChan := make(chan string, len(files)), make(chan error)
 	for _, file := range files {
-		go provider.UploadFile(file, idChan, errChan)
+		go provider.UploadFile(&wg, file, idChan, errChan)
 	}
 
-	select {
-	case id := <- idChan:
-		fileIds = append(fileIds, id)
-	case err := <- errChan:
+	go func() {
+		for fid := range idChan {
+			fileIds = append(fileIds, fid)
+		}
+		
+		err =<- errChan
+	}()
+
+	wg.Wait()
+
+	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
