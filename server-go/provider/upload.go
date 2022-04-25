@@ -17,7 +17,7 @@ func UploadFile(wg *sync.WaitGroup, file *multipart.FileHeader, idChan chan stri
 	defer wg.Done()
 
 	cfg := config.Get()
-	fileId, err := uuid.NewUUID()
+	fileId, err := uuid.NewRandom()
 	if err != nil {
 		errChan <- err
 	}
