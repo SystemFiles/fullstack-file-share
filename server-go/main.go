@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -56,6 +57,8 @@ func root() error {
 }
 
 func main() {
+	flag.Parse()
+	
 	if err := root(); err != nil {
 		glog.Errorf("api error. %s", err)
 		os.Exit(1)

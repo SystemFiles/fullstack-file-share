@@ -1,48 +1,27 @@
 package provider
 
 import (
-	"io"
+	"io/ioutil"
 	"mime/multipart"
-	"os"
-	"path"
-	"path/filepath"
-	"strings"
 	"sync"
 
-	"github.com/google/uuid"
-	"sykesdev.ca/file-server/config"
+	"sykesdev.ca/file-server/archive"
 )
 
-func UploadFile(wg *sync.WaitGroup, file *multipart.FileHeader, idChan chan string, errChan chan error) {
+func UploadLocal(wg *sync.WaitGroup, fileArchive *archive.Archive, file *multipart.FileHeader, errChan chan error) {
 	defer wg.Done()
 
-	cfg := config.Get()
-	fileId, err := uuid.NewRandom()
+	srcData, err := file.Open()
 	if err != nil {
 		errChan <- err
 	}
+	defer srcData.Close()
 
-	src, err := file.Open()
+	data, err := ioutil.ReadAll(srcData)
 	if err != nil {
 		errChan <- err
 	}
-	defer src.Close()
-
-	fileParts := strings.Split(file.Filename, ".")
-	dstPath, err := filepath.Abs(path.Join(cfg.StorageDir, fileId.String() + "." + fileParts[len(fileParts) -1]))
-	if err != nil {
+	if err := fileArchive.AddFile(file.Filename, data); err != nil {
 		errChan <- err
 	}
-
-	dst, err := os.Create(dstPath)
-	if err != nil {
-		errChan <- err
-	}
-	defer dst.Close()
-
-	if _, err = io.Copy(dst, src); err != nil {
-		errChan <- err
-	}
-
-	idChan <- fileId.String()
 }

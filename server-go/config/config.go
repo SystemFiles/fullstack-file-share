@@ -7,8 +7,14 @@ import (
 	"sync"
 )
 
+const (
+	CLOUD = "CLOUD"
+	LOCAL = "LOCAL"
+)	
+
 type Config struct {
 	Port int
+	StorageMode string
 	StorageDir string
 	MaxFileCount int
 	MaxFileSize int
@@ -28,9 +34,14 @@ func Get() Config {
 			p = 5000
 		}
 
+		sm := strings.ToUpper(os.Getenv("FS_STORAGE_MODE"))
+		if sm == "" {
+			sm = LOCAL
+		}
+
 		sd := os.Getenv("FS_SERVER_STORAGE_DIR")
 		if sd == "" {
-			sd = "/Users/bensykes/Desktop"
+			sd = "/Users/bensykes/Downloads"
 		}
 
 		mfc, err := strconv.Atoi(os.Getenv("FS_SERVER_MAX_FILE_COUNT"))
@@ -65,6 +76,7 @@ func Get() Config {
 
 		instance = Config{
 			Port: p,
+			StorageMode: sm,
 			StorageDir: sd,
 			MaxFileCount: mfc,
 			MaxFileSize: mfs,
